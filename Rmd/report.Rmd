@@ -1,0 +1,428 @@
+---
+title: "INFO 550 HOMEWORK 2"
+author: "Shijia Bian"
+date: "September 22 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Go into RStudio and find the system environment variable for RSTUDIO_PANDOC
+# Sys.getenv("RSTUDIO_PANDOC")
+# Then put that in your R script prior to calling the render command.
+# Sys.setenv(RSTUDIO_PANDOC="--- insert directory here ---")
+
+# Sys.setenv(RSTUDIO_PANDOC="/Applications/RStudio.app/Contents/MacOS/pandoc")
+knitr::opts_chunk$set(echo = TRUE)
+installed_pkgs <- row.names(installed.packages())
+pkgs <- c("tidyverse", 
+          "oro.dicom", 
+          "here", 
+          "rmarkdown", 
+          "wesanderson", 
+          "knitr", 
+          "renv")
+for(p in pkgs){
+	if(!(p %in% installed_pkgs)){
+		install.packages(p)
+	}
+}
+
+library(knitr)
+library(wesanderson)
+library(rmarkdown)
+library(tidyverse)
+library(oro.dicom)
+library(here)
+library(renv)
+
+# renv::init()
+# renv::restore() 
+# renv::snapshot()
+
+here::i_am('Rmd/report.Rmd')
+knitr::opts_knit$set(root.dir = here::here())
+
+#' Path of the data. Please set the directory to where you store the repo INFO550CourseRepo
+# 
+# data_path <- c("~/Dropbox/Emory Courses/Fall 2021/INFO 550/github_repo/INFO550CourseRepo/")
+```
+
+### Part I. Overview
+
+The data used in this project is provided by Kaggle competition "[RSNA-MICCAI Brain Tumor
+Radiogenomic Classification](https://www.kaggle.com/c/rsna-miccai-brain-tumor-radiogenomic-classification/overview)".
+
+The goal of this project is to improve the diagnosis of giloblastoma by defining the genetic subtype of giloblastoma using MRI imaging scan. The data is composed with a training set (N = 585) and a testing set (N = 87). The subject-level MGMT promoter methylation value for the training set is also provided in the csv file *train_labels.csv*. The model performance will be evaluated by predicting the hidden label of the testing set. The data size is 136.85 GB.
+
+The training and testing imaging data are stored in DICOM format. Every DICOM folder represents the MRI scan for one subject that has four sub folders, FLAIR, T1W, T1GD and T2. There are 585 DICOM folders and 87 DICOM folders representing the MRI scans for the training data set and testing data set correspondingly. The task is to predict the MGMT value of the test set.
+
+The purpose of this markdown file is to use FLAIR image as an example. We want to visualize the different between the methylated and unmethylated subject. I use one methylated subject 359 and one unmethylated subject 308 as examples. The learnings from these visualization could help us to decide the features that we can derive for classification analysis.
+
+
+
+### Part II. Overview of train_labels.csv
+
+The csv file train_labels.csv contains two columns and 585 rows. The first column corresponds to the subject ID of the 585 subjects from the training set. The second column represents the MGMT promoter methylation value for the subject from the same row. The MGMT promoter methylation value represents the methylation status, and it is binary: 1 is defined that the corresponding subject on that row is unmethylated, 0 means methylated.
+
+```{r results='hide', echo=FALSE}
+# Read the training label
+train_label <- read.csv('Data/train_labels.csv')
+
+# Take a look at the first couple of rows
+head(train_label)
+
+# Value in the column MGMT_Value that is the diagnosis label
+table(train_label$MGMT_value)
+#  0   1 
+#278 307 
+
+```
+
+
+```{r count_plot, echo=FALSE, fig.align="center", fig.cap = "Count of subjects under the binary MGMT promoter methylation status in training set"}
+temp <- train_label %>%
+  select(., MGMT_value) %>%
+  group_by(MGMT_value) %>%
+  summarise(n = n()) %>%
+  mutate(MGMT_value = factor(MGMT_value))
+levels(temp$MGMT_value) = c("Methylated", "Unmethylated")
+p<-ggplot(data = temp, aes(x = MGMT_value, y = n)) +
+  geom_bar(stat="identity", fill="steelblue")+
+  geom_text(aes(label = n), vjust = 1.6, color = "white", size = 8) +
+  ggtitle("Count of subjects under the binary MGMT promoter \nmethylation status in training set") +
+  xlab("MGMT promoter methylation status") + 
+  ylab("Count") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(color="#012169", size=14, face="bold.italic"),
+    axis.title.x = element_text(color="#012169", size=14, face="bold"),
+    axis.title.y = element_text(color="#012169", size=14, face="bold")
+  ) 
+p
+```
+
+
+### Part III. Ad-hoc visualization of FLAIR for training subject 359 who is methylated
+
+The FLAIR image folder of subject 359 has 60 images. Each image file is a data frame with 256 rows and 256 columns. 
+
+```{r echo=FALSE, eval=FALSE}
+# Explore the dimension of each image in FLAIR
+df = data.frame()
+for (i in 1:60) {
+  train_359_flair_36_path <- file.path(
+                               "Data",
+                               "train",
+                               "00359",
+                               "FLAIR",
+                               paste("Image-", i, ".dcm", sep = ""))
+  train_359_flair_36 <- oro.dicom::readDICOMFile(train_359_flair_36_path)
+  temp_df = data.frame(dim(train_359_flair_36$img)[1], dim(train_359_flair_36$img)[2])
+  colnames(temp_df) = c("", "")
+  df = rbind(df, temp_df)
+}
+df
+```
+
+The figure below shows the visualization of the selected FLAIR image: 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55 and 60 ordered by row. We can see that the 55th image is grey, which means all values in the data frame used for plotting the image are 0. These type of images contain non-information for performing analysis. We need to exclude such images.
+
+Meanwhile, we can easily observe from the image that there are large white matters which implies methylation. 
+
+```{r fig.width=8, fig.height=8, echo=FALSE, fig.align="center", fig.cap = "Selected FLAIR image for subject 359"}
+index <- c(5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
+par(mfrow = c(3, 4)) # Create a 2 x 2 plotting matrix
+for (i in 1:length(index)) {
+  train_359_flair_36_path <- file.path(
+                               "Data",
+                               "train",
+                               "00359",
+                               "FLAIR",
+                               paste("Image-", index[i], ".dcm", sep = ""))
+  train_359_flair_36 <- oro.dicom::readDICOMFile(train_359_flair_36_path)
+  image(t(train_359_flair_36$img), col=grey(0:64/64), xlab=index[i], ylab="")
+}
+
+
+```
+
+```{r echo=FALSE, eval=TRUE}
+# Explore which data frames are all 0s
+df = data.frame()
+all_0 <- c()
+for (i in 1:60) {
+  train_359_flair_36_path <- file.path(
+                               "Data",
+                               "train",
+                               "00359",
+                               "FLAIR",
+                               paste("Image-", i, ".dcm", sep = ""))
+  train_359_flair_36 <- oro.dicom::readDICOMFile(train_359_flair_36_path)
+  if (all(train_359_flair_36$img==0)) {
+    all_0 <- c(all_0, i)
+  }
+}
+```
+
+
+We can observe that the image from 5 to 53 are not all imputed with 0. Here is a quick look at the first and last 12 FLAIR for subject 359 that is not all 0.
+
+```{r fig.width=8, fig.height=8, echo=FALSE, fig.align="center", fig.cap = "First 12 FLAIR for subject 359 that is not all 0"}
+index <- setdiff(c(1:60), all_0)[1:12]
+par(mfrow = c(3, 4)) # Create a 2 x 2 plotting matrix
+for (i in 1:length(index)) {
+  train_359_flair_36_path <- file.path(
+                               "Data",
+                               "train",
+                               "00359",
+                               "FLAIR",
+                               paste("Image-", index[i], ".dcm", sep = ""))
+  train_359_flair_36 <- oro.dicom::readDICOMFile(train_359_flair_36_path)
+  image(t(train_359_flair_36$img), col=grey(0:64/64), xlab=index[i], ylab="")
+}
+
+
+```
+
+
+
+```{r fig.width=8, fig.height=8, echo=FALSE, fig.align="center", fig.cap = "Last 12 FLAIR for subject 359 that is not all 0"}
+last12 <- length(setdiff(c(1:60), all_0))
+index <- setdiff(c(1:60), all_0)[(last12-11):last12]
+par(mfrow = c(3, 4)) # Create a 2 x 2 plotting matrix
+for (i in 1:length(index)) {
+  train_359_flair_36_path <- file.path(
+                               "Data",
+                               "train",
+                               "00359",
+                               "FLAIR",
+                               paste("Image-", index[i], ".dcm", sep = ""))
+  train_359_flair_36 <- oro.dicom::readDICOMFile(train_359_flair_36_path)
+  image(t(train_359_flair_36$img), col=grey(0:64/64), xlab=index[i], ylab="")
+}
+
+
+```
+
+### Part IV. Ad-hoc visualization of FLAIR for training subject 308 who is unmethylated
+
+
+The FLAIR image folder of subject 308 also has 60 images. Each image file is a data frame with 256 rows and 192 columns. The dimension of the image data set is NOT the same as the subject 359.
+
+```{r echo=FALSE, eval=FALSE}
+# Explore the dimension of each image in FLAIR
+df = data.frame()
+for (i in 1:60) {
+  train_359_flair_36_path <- file.path(
+                               "Data",
+                               "train",
+                               "00308",
+                               "FLAIR",
+                               paste("Image-", i, ".dcm", sep = ""))
+  train_359_flair_36 <- oro.dicom::readDICOMFile(train_359_flair_36_path)
+  temp_df = data.frame(dim(train_359_flair_36$img)[1], dim(train_359_flair_36$img)[2])
+  colnames(temp_df) = c("", "")
+  df = rbind(df, temp_df)
+}
+df
+```
+
+The figure below shows the visualization of the selected FLAIR image for subject 308: 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55 and 60 ordered by row. We can see that the 55th image and the 60th image are grey, which means all values in the data frame used for plotting the image are 0. These type of images contain non-information for performing analysis. We need to exclude these images. Comparing to the subject 359, this subject without methylationn seems to have less white matters. This can help us to understand the data and plan for the adequate analysis plan.
+
+```{r fig.width=8, fig.height=8, echo=FALSE, fig.align="center", fig.cap = "Selected FLAIR image for subject 308"}
+index <- c(5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
+par(mfrow = c(3, 4)) # Create a 2 x 2 plotting matrix
+for (i in 1:length(index)) {
+  train_359_flair_36_path <- file.path(
+                               "Data",
+                               "train",
+                               "00308",
+                               "FLAIR",
+                               paste("Image-", index[i], ".dcm", sep = ""))
+  train_359_flair_36 <- oro.dicom::readDICOMFile(train_359_flair_36_path)
+  image(t(train_359_flair_36$img), col=grey(0:64/64), xlab=index[i], ylab="")
+}
+
+
+```
+
+```{r echo=FALSE, eval=TRUE}
+# Explore which data frames are all 0s
+df = data.frame()
+all_0 <- c()
+for (i in 1:60) {
+  train_359_flair_36_path <- file.path(
+                               "Data",
+                               "train",
+                               "00308",
+                               "FLAIR",
+                               paste("Image-", i, ".dcm", sep = ""))
+  train_359_flair_36 <- oro.dicom::readDICOMFile(train_359_flair_36_path)
+  if (all(train_359_flair_36$img==0)) {
+    all_0 <- c(all_0, i)
+  }
+}
+```
+
+
+We can observe that the image from 7 to 51 are not all imputed with 0. Here is a quick look at the first and last 12 FLAIR for subject 359 that is not all 0.
+
+Comparing to the image of subject 359, these images does not contain the large white matter, which is a typical image of unmethylated subject.
+
+```{r fig.width=8, fig.height=8, echo=FALSE, fig.align="center", fig.cap = "First 12 FLAIR for subject 308 that is not all 0"}
+index <- setdiff(c(1:60), all_0)[1:12]
+par(mfrow = c(3, 4)) # Create a 2 x 2 plotting matrix
+for (i in 1:length(index)) {
+  train_359_flair_36_path <- file.path(
+                               "Data",
+                               "train",
+                               "00308",
+                               "FLAIR",
+                               paste("Image-", index[i], ".dcm", sep = ""))
+  train_359_flair_36 <- oro.dicom::readDICOMFile(train_359_flair_36_path)
+  image(t(train_359_flair_36$img), col=grey(0:64/64), xlab=index[i], ylab="")
+}
+
+
+```
+
+```{r fig.width=8, fig.height=8, echo=FALSE, fig.align="center", fig.cap = "Last 12 FLAIR for subject 308 that is not all 0"}
+last12 <- length(setdiff(c(1:60), all_0))
+index <- setdiff(c(1:60), all_0)[(last12-11):last12]
+par(mfrow = c(3, 4)) # Create a 2 x 2 plotting matrix
+for (i in index) {
+  train_359_flair_36_path <- file.path(
+                               "Data",
+                               "train",
+                               "00308",
+                               "FLAIR",
+                               paste("Image-", i, ".dcm", sep = ""))
+  train_359_flair_36 <- oro.dicom::readDICOMFile(train_359_flair_36_path)
+  image(t(train_359_flair_36$img), col=grey(0:64/64), xlab=index[i], ylab="")
+}
+
+
+```
+### Part V. Compare the aggregated average heatmap of subject 359 and subject 308
+
+With the non-informative images being removed, we can do a quick visualization of the aggregated heatmap of subject 359 and subject 308 to explore if there is any different in terms of methylation status. 
+
+The heatmap of subject 308 is more evenly colored than the subject 359, even the color of the heatmap of subject 359 is lighter. This might induce the features that we can use for future analysis.
+
+```{r results='hide', echo=FALSE}
+# Save the matrix of subject 00359 as a list of matrix. Only include matrix that
+# does not have all their values to be 0
+all_0_00359 <- c()
+for (i in 1:60) {
+  train_359_flair_36_path <- file.path(
+                               "Data",
+                               "train",
+                               "00359",
+                               "FLAIR",
+                               paste("Image-", i, ".dcm", sep = ""))
+  train_359_flair_36 <- oro.dicom::readDICOMFile(train_359_flair_36_path)
+  if (all(train_359_flair_36$img==0)) {
+    all_0_00359 <- c(all_0_00359, i)
+  }
+}
+
+index <- setdiff(c(1:60), all_0_00359)
+array_00359 <-  array(0, dim = c(256, 256, length(index)))
+count = 1
+for (i in index) {
+  train_359_flair_36_path <- file.path(
+                               "Data",
+                               "train",
+                               "00359",
+                               "FLAIR",
+                               paste("Image-", i, ".dcm", sep = ""))
+  train_359_flair_36 <- oro.dicom::readDICOMFile(train_359_flair_36_path)
+  array_00359[,,count]= t(train_359_flair_36$img)
+  count = count + 1
+}
+
+# Save the matrix of subject 00308 as a list of matrix. Only include matrix that
+# does not have all their values to be 0
+all_0_00308 <- c()
+for (i in 1:60) {
+  train_359_flair_36_path <- file.path(
+                               "Data",
+                               "train",
+                               "00308",
+                               "FLAIR",
+                               paste("Image-", i, ".dcm", sep = ""))
+  train_359_flair_36 <- oro.dicom::readDICOMFile(train_359_flair_36_path)
+  if (all(train_359_flair_36$img==0)) {
+    all_0_00308 <- c(all_0_00308, i)
+  }
+}
+
+index <- setdiff(c(1:60), all_0_00308)
+array_00308 <-  array(0, dim = c(192, 256, length(index)))
+for (i in 1:length(index)) {
+  train_359_flair_36_path <- file.path(
+                               "Data",
+                               "train",
+                               "00308",
+                               "FLAIR",
+                               paste("Image-", index[i], ".dcm", sep = ""))
+  train_359_flair_36 <- oro.dicom::readDICOMFile(train_359_flair_36_path)
+  array_00308[,,i] = t(train_359_flair_36$img)
+}
+
+mean_308 <- apply(array_00308, 1:2, mean)
+mean_359 <- apply(array_00359, 1:2, mean)
+
+```
+
+```{r fig.width=6, fig.height=6, echo=FALSE, fig.align="center", fig.cap = "Heat map of the aggregated average of the images for subject 308 (images with 0 value only were excluded)"}
+mean_value = mean(c(as.numeric(mean_308), as.numeric(mean_359)))
+min_value = min(c(as.numeric(mean_308), as.numeric(mean_359)))
+max_value = max(c(as.numeric(mean_308), as.numeric(mean_359)))
+
+mean_308 %>%
+  as.data.frame() %>%
+  rename_with(., ~ gsub("V", "", .x, fixed = TRUE)) %>%
+  mutate(rowNames = 1:dim(.)[1]) %>%
+  tidyr::pivot_longer(!rowNames, names_to = "ColNames", values_to = "value" ) %>%
+  mutate(ColNames = as.numeric(ColNames),
+         rowNames = as.numeric(rowNames)) %>%
+  ggplot(., aes(ColNames, rowNames, fill= value)) + 
+  geom_tile(aes(x=rowNames,y=ColNames,fill = value)) +
+  scale_fill_gradient2(low="lightblue", mid="white", high="red", #colors in the scale
+                   midpoint=mean_value,    #same midpoint for plots (mean of the range)
+                   breaks=seq(min_value, max_value, length.out = 10), #breaks in the scale bar
+                   limits=c(0, 350))  +
+  ggtitle("Aggregated mean of subject 308 with all images excluding the images with 0 only \nNot methylated")                  
+
+```
+
+```{r fig.width=6, fig.height=6, echo=FALSE, fig.align="center", fig.cap = "Heat map of the aggregated average of the images for subject 308 (images with 0 value only were excluded)"}
+mean_value = mean(c(as.numeric(mean_308), as.numeric(mean_359)))
+min_value = min(c(as.numeric(mean_308), as.numeric(mean_359)))
+max_value = max(c(as.numeric(mean_308), as.numeric(mean_359)))
+
+mean_359 %>%
+  as.data.frame() %>%
+  rename_with(., ~ gsub("V", "", .x, fixed = TRUE)) %>%
+  mutate(rowNames = 1:dim(.)[1]) %>%
+  tidyr::pivot_longer(!rowNames, names_to = "ColNames", values_to = "value" ) %>%
+  mutate(ColNames = as.numeric(ColNames),
+         rowNames = as.numeric(rowNames)) %>%
+  ggplot(., aes(ColNames, rowNames, fill= value)) + 
+  geom_tile(aes(x=rowNames,y=ColNames,fill = value)) +
+  scale_fill_gradient2(low="lightblue", mid="white", high="red", #colors in the scale
+                   midpoint=mean_value,    #same midpoint for plots (mean of the range)
+                   breaks=seq(min_value, max_value, length.out = 10), #breaks in the scale bar
+                   limits=c(0, 350))  +
+  ggtitle("Aggregated mean of subject 359 with all images excluding the images with 0 only\n Methylated")                  
+
+```
+
+
+## Figure
+
+We made a great figure!
+
+```{r, echo = FALSE}
+knitr::include_graphics(here::here("figs", "barchart.png"))
+```
