@@ -12,9 +12,14 @@ The goal of this analysis is to improve the diagnosis of giloblastoma by definin
 
 To intall the docker image and knit the R Markdown file, you will can follow the steps from sections below.
 
-### Before running the image
+### Environment
 
-The docker image is built and tested on Mac Monterey V.12.0.1 with Intel Chip. I still have problem finding out how to retrive the output on Mac with Apple M1 chip. Pnadoc was not properly initiated in Docker container on Mac with Apple M1 chip. 
+The docker image was built and tested on Mac Monterey V.12.0.1 with **Intel Chip**. 
+
+
+### Issues encountered while using Mac Monterey V.12.0.1 with Apple M1 Chip
+
+I still have problem finding out how to retrive the output on Mac with Apple M1 chip. Pnadoc was not properly initiated in Docker container on Mac with Apple M1 chip. 
 
 A warning message can be thrown out when build the docker:
 
