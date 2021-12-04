@@ -60,7 +60,7 @@ $ docker run -it shijbian/final_project /bin/bash
 Or you can simply run this
 
 ```sh
-$ docker run -it shijbian/final_project /bin/bash
+$ docker run -it shijbian/final_project
 ```
 
 
