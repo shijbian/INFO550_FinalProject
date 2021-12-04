@@ -50,7 +50,7 @@ docker pull shijbian/final_project
 $ docker run -v ~/Desktop/docker_output:/INFO550_FinalProject/output shijbian/final_project
 ```
 
-4. If you prefer to retrive the folder on docker, you can run the code below from terminal:
+4. If you prefer to retrive the folder on docker, you can run the code below from terminal. The html file could be retrived at `# cd output`
 
 ```sh
 $ docker run -it shijbian/final_project /bin/bash
@@ -63,6 +63,13 @@ Or you can simply run this
 $ docker run -it shijbian/final_project
 ```
 
+In  the  end, you will see  a  warning  message as below, but it is totally normal:
+
+```sh
+In grSoftVersion() :
+  unable to load shared object '/usr/local/lib/R/modules//R_X11.so':
+  libXt.so.6: cannot open shared object file: No such file or directory
+```
 
 **NOTE: It might needs around 15 minutes to knit the html due to the large data size (2.3GB).**
 
