@@ -8,39 +8,64 @@ The goal of this analysis is to improve the diagnosis of giloblastoma by definin
 
 *INFO550_FinalProject* is the name of the project repository. The data are stored under the folder /Data. The R markdown file you will knit is /Rmd/report.Rmd.
 
-*final-project* is the container name on Docker.
+*shijbian/final_project:latest* is the container name on Docker. *latest* is the default container tag.
 
-To knit the R Markdown file, you will need to cd into the folder *INFO550_Assignment4_Proj*, then run the makefile using the command below in shell:
+To intall the docker image and knit the R Markdown file, you will can follow the steps from sections below.
+
+### Before running the image
+
+The docker image is built and tested on Mac Monterey V.12.0.1 with Intel Chip. I still have problem finding out how to retrive the output on Mac with Apple M1 chip. Pnadoc was not properly initiated in Docker container on Mac with Apple M1 chip. A warning message is thrown out as:
+
+*WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested.*
 
 ### Steps for using the docker to compile the R markdown file
 
-- 1. Change the current working directory to the location where you want the cloned directory to be, clone the *INFO550_FinalProject* repo from GitHub. 
+- 0. Make sure the docker is running on the local desktop.
+
+- 1. Change the current working directory to the location where you want the cloned directory to be, clone the *INFO550_FinalProject* repo from GitHub. Depends on your labtop setting, you can clone the repo from my [github repo](https://github.com/shijbian/INFO550_FinalProject) using:
 
 ```sh
-$ git clone https://github.com/YOUR-USERNAME/YOUR-REPOSITORY
+$ git clone https://github.com/shijbian/INFO550_FinalProject.git
 ```
 
-- 2. Pull down the container image to local. The link to this docker repo on Docker Hub is [here](https://hub.docker.com/r/shijbian/final_project).
+Or,
+
+```sh
+$ git clone git@github.com:shijbian/INFO550_FinalProject.git
+```
+
+
+- 2. Pull down the container image to local. The link to this docker repo on Docker Hub is [here](https://hub.docker.com/r/shijbian/final_project). It will take around 5 min to pull the docker contaner from Docker Hub.
 
 ```sh
 docker pull shijbian/final_project
 ```
 
-- 3. If you want prrefer to retrieve the html report at your local diectory, you can create a folder in your local directory. In the example here, I created a folder called *docker_output* under *Desktop*. The 
-docker container is final_project that has been pulled from the docker hub. The html will be rretrived unde  */INFO550_FinalProject/output/*, and it  will be mounted simultaneously at yourr local repo  *~/Desktop/docker_output*.
+- 3. If you want prrefer to retrieve the html report at your local diectory, you can create a folder in your local directory. In the example here, I created a folder called *docker_output* under *Desktop*. The docker container is called final_project that has been pulled from the docker hub. The html will be rretrived under  */INFO550_FinalProject/output/*, and it  will be mounted simultaneously at yourr local repo at ** ~/Desktop/docker_output*. 
+
 
 ```sh
-docker run -v ~/Desktop/docker_output:/INFO550_FinalProject/output final_project
+$ docker run -v ~/Desktop/docker_output:/INFO550_FinalProject/output shijbian/final_project
 ```
 
 - 4. If you prefer to retrive the folder on docker, you can run the code below from terminal:
 
 ```sh
-$ docker run -it final_project /bin/bash
+$ docker run -it shijbian/final_project /bin/bash
 # make -f Makefile
 ```
 
-## Extra Notes for Working Pipeline
+Or you can simply run this
+
+```sh
+$ docker run -it shijbian/final_project /bin/bash
+```
+
+
+**NOTE: It might needs around 15 minutes to knit the html due to the large data size (2.3GB).**
+
+
+## Extra Notes for Working Pipeline (Memo for myself)
 
 
 - 1. Build the docker image `final_project` at the local director
@@ -69,6 +94,11 @@ You should be able to see the folder /INFO550_FinalProject/.
 docker run -v ~/Dropbox/Emory\ Courses/Fall\ 2021/INFO\ 550/INFO550_FinalProject/Rmd:/INFO550_FinalProject/Rmd -it final-project
 ```
 
+- 4. See existing docker 
+
+```sh
+docker ps
+```
 
 ## Data
 The data used in this project is provided by Kaggle competition "[RSNA-MICCAI Brain Tumor
