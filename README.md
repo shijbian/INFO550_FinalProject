@@ -20,9 +20,9 @@ The docker image is built and tested on Mac Monterey V.12.0.1 with Intel Chip. I
 
 ### Steps for using the docker to compile the R markdown file
 
-- 0. Make sure the docker is running on the local desktop.
+0. Make sure the docker is running on the local desktop.
 
-- 1. Change the current working directory to the location where you want the cloned directory to be, clone the *INFO550_FinalProject* repo from GitHub. Depends on your labtop setting, you can clone the repo from my [github repo](https://github.com/shijbian/INFO550_FinalProject) using:
+1. Change the current working directory to the location where you want the cloned directory to be, clone the *INFO550_FinalProject* repo from GitHub. Depends on your labtop setting, you can clone the repo from my [github repo](https://github.com/shijbian/INFO550_FinalProject) using:
 
 ```sh
 $ git clone https://github.com/shijbian/INFO550_FinalProject.git
@@ -34,15 +34,16 @@ Or,
 $ git clone git@github.com:shijbian/INFO550_FinalProject.git
 ```
 
-**You can skip this step: I do not think you need to download the repo to your local directory in order to run the docker image**
+**Note:** You can skip step 1: I do not think you need to download the repo to your local directory in order to run the docker image. 
 
-- 2. Pull down the container image to local. The link to this docker repo on Docker Hub is [here](https://hub.docker.com/r/shijbian/final_project). It will take around 5 min to pull the docker contaner from Docker Hub.
+
+2. Pull down the container image to local. The link to this docker repo on Docker Hub is [here](https://hub.docker.com/r/shijbian/final_project). It will take around 5 min to pull the docker contaner from Docker Hub.
 
 ```sh
 docker pull shijbian/final_project
 ```
 
-- 3. If you want prrefer to retrieve the html report at your local diectory, you can create a folder in your local directory. In the example here, I created a folder called *docker_output* under *Desktop*. The docker container is called final_project that has been pulled from the docker hub. The html will be rretrived under  */INFO550_FinalProject/output/*, and it  will be mounted simultaneously at yourr local repo at ** ~/Desktop/docker_output*. 
+3. If you want prrefer to retrieve the html report at your local diectory, you can create a folder in your local directory. In the example here, I created a folder called *docker_output* under *Desktop*. The docker container is called final_project that has been pulled from the docker hub. The html will be rretrived under  */INFO550_FinalProject/output/*, and it  will be mounted simultaneously at yourr local repo at ** ~/Desktop/docker_output*. 
 
 
 ```sh
