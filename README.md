@@ -50,7 +50,7 @@ docker pull shijbian/final_project
 $ docker run -v ~/Desktop/docker_output:/INFO550_FinalProject/output shijbian/final_project
 ```
 
-- 4. If you prefer to retrive the folder on docker, you can run the code below from terminal:
+4. If you prefer to retrive the folder on docker, you can run the code below from terminal:
 
 ```sh
 $ docker run -it shijbian/final_project /bin/bash
