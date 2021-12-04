@@ -14,9 +14,25 @@ To intall the docker image and knit the R Markdown file, you will can follow the
 
 ### Before running the image
 
-The docker image is built and tested on Mac Monterey V.12.0.1 with Intel Chip. I still have problem finding out how to retrive the output on Mac with Apple M1 chip. Pnadoc was not properly initiated in Docker container on Mac with Apple M1 chip. A warning message is thrown out as:
+The docker image is built and tested on Mac Monterey V.12.0.1 with Intel Chip. I still have problem finding out how to retrive the output on Mac with Apple M1 chip. Pnadoc was not properly initiated in Docker container on Mac with Apple M1 chip. 
 
-*WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested.*
+A warning message can be thrown out when build the docker:
+
+```sh
+WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested.
+```
+
+It seems that there is no problem running R and installing R packages using iteractive session from Docker Container on Mac M1 Chip. However, there is problem knitting RMarkdown. The error message is below
+
+```sh
+Error in strsplit(info, "\n")[[1]] : subscript out of bounds
+Calls: render ... pandoc_available -> find_pandoc -> lapply -> FUN -> get_pandoc_version
+In addition: Warning message:
+In system(paste(shQuote(path), "--version"), intern = TRUE) :
+  running command ''/usr/local/bin/pandoc' --version' had status 137
+Execution halted
+make: *** [Makefile:2: report] Error 1
+```
 
 ### Steps for using the docker to compile the R markdown file
 
