@@ -43,7 +43,7 @@ $ git clone git@github.com:shijbian/INFO550_FinalProject.git
 docker pull shijbian/final_project
 ```
 
-3. If you want prrefer to retrieve the html report at your local diectory, you can create a folder in your local directory. In the example here, I created a folder called *docker_output* under *Desktop*. The docker container is called final_project that has been pulled from the docker hub. The html will be rretrived under  */INFO550_FinalProject/output/*, and it  will be mounted simultaneously at yourr local repo at ** ~/Desktop/docker_output*. 
+3. If you want prrefer to retrieve the html report at your local diectory, you can create a folder in your local directory. In the example here, I created a folder called *docker_output* under *Desktop*. The docker container is called final_project that has been pulled from the docker hub. The html will be rretrived under  */INFO550_FinalProject/output/*, and it  will be mounted simultaneously at yourr local repo at *~/Desktop/docker_output*. 
 
 
 ```sh
