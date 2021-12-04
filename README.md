@@ -34,6 +34,7 @@ Or,
 $ git clone git@github.com:shijbian/INFO550_FinalProject.git
 ```
 
+**You can skip this step: I do not think you need to download the repo to your local directory in order to run the docker image**
 
 - 2. Pull down the container image to local. The link to this docker repo on Docker Hub is [here](https://hub.docker.com/r/shijbian/final_project). It will take around 5 min to pull the docker contaner from Docker Hub.
 
